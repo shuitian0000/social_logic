@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>社会底层逻辑 - 全面解析系统</title>
+<style>
+:root {
+  --bg: #0a0e17;
+  --surface: #111827;
+  --surface2: #1e293b;
+  --border: #334155;
+  --text: #e2e8f0;
+  --text2: #94a3b8;
+  --accent: #3b82f6;
+  --accent2: #8b5cf6;
+  --accent3: #10b981;
+  --accent4: #f59e0b;
+  --accent5: #ef4444;
+  --glow: rgba(59,130,246,0.15);
+}
+* { margin:0; padding:0; box-sizing:border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+body { background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* Nav */
+.nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(10,14,23,0.9); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border); display: flex; align-items: center;
+  padding: 0 24px; height: 56px; overflow-x: auto; }
+.nav-title { font-size: 18px; font-weight: 700; color: #60a5fa; margin-right: 24px; white-space: nowrap; }
+.nav a { color: var(--text2); text-decoration: none; padding: 8px 14px; font-size: 13px;
+  border-radius: 6px; transition: all 0.2s; cursor: pointer; white-space: nowrap; }
+.nav a:hover, .nav a.active { color: #60a5fa; background: rgba(96,165,250,0.1); }
+
+.section { display: none; padding: 72px 24px 24px; max-width: 1400px; margin: 0 auto; min-height: 100vh; }
+.section.active { display: block; }
+
+.hero { text-align: center; padding: 60px 0 40px; }
+.hero h1 { font-size: 40px; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+.hero p { font-size: 17px; color: var(--text2); max-width: 640px; margin: 0 auto 32px; line-height: 1.7; }
+.hero-tags { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.hero-tag { padding: 5px 14px; background: var(--surface2); border-radius: 20px; font-size: 12px;
+  color: var(--text2); border: 1px solid var(--border); }
+
+/* Graph */
+.graph-container { position: relative; width: 100%; height: 700px; background: var(--surface);
+  border-radius: 16px; border: 1px solid var(--border); overflow: hidden; }
+.graph-container svg { width: 100%; height: 100%; }
+.graph-tooltip { position: absolute; background: rgba(17,24,39,0.96); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 16px; font-size: 13px; max-width: 300px;
+  pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 10; line-height: 1.7; }
+.graph-tooltip.show { opacity: 1; }
+.graph-tooltip h4 { color: #60a5fa; margin-bottom: 4px; }
+.graph-legend { position: absolute; bottom: 16px; left: 16px; display: flex; gap: 16px;
+  font-size: 12px; color: var(--text2); }
+.graph-legend span { display: flex; align-items: center; gap: 6px; }
+.graph-legend .dot { width: 10px; height: 10px; border-radius: 50%; }
+.layer-label { fill: var(--text2); font-size: 13px; font-weight: 600; }
+
+/* Rules */
+.rules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; padding: 20px 0; }
+.rule-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 24px; transition: all 0.3s; cursor: pointer; position: relative; overflow: hidden; }
+.rule-card:hover { border-color: #60a5fa; transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(96,165,250,0.1); }
+.rule-card .rule-num { position: absolute; top: -8px; right: 12px; font-size: 64px;
+  font-weight: 900; color: rgba(96,165,250,0.06); }
+.rule-card h3 { font-size: 16px; color: #60a5fa; margin-bottom: 8px; }
+.rule-card .rule-sub { font-size: 13px; color: var(--text2); margin-bottom: 12px; font-style: italic; }
+.rule-card .rule-body { font-size: 14px; line-height: 1.8; color: var(--text); }
+.rule-card .rule-body strong { color: #fbbf24; }
+.rule-card .rule-detail { display: none; margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid var(--border); font-size: 13px; color: var(--text2); line-height: 1.8; }
+.rule-card .rule-detail .source { display: inline-block; margin-top: 8px; padding: 3px 10px;
+  background: rgba(139,92,246,0.1); border-radius: 4px; font-size: 11px; color: #a78bfa; }
+.rule-card.expanded .rule-detail { display: block; }
+
+/* Scenarios */
+.scenario-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+.scenario-tab { padding: 8px 20px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; cursor: pointer; font-size: 14px; color: var(--text2); transition: all 0.2s; }
+.scenario-tab:hover, .scenario-tab.active { background: rgba(96,165,250,0.1); color: #60a5fa; border-color: #60a5fa; }
+.scenario-content { display: none; }
+.scenario-content.active { display: block; }
+.scenario-flow { display: flex; flex-direction: column; gap: 0; }
+.flow-step { display: flex; gap: 20px; padding: 20px 0; position: relative; }
+.flow-step::before { content: ''; position: absolute; left: 19px; top: 52px; bottom: -8px;
+  width: 2px; background: var(--border); }
+.flow-step:last-child::before { display: none; }
+.flow-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 18px; flex-shrink: 0; }
+.flow-body h4 { font-size: 15px; margin-bottom: 4px; }
+.flow-body p { font-size: 14px; color: var(--text2); line-height: 1.7; }
+.flow-body .tip { display: inline-block; margin-top: 6px; padding: 4px 12px;
+  background: rgba(251,191,36,0.1); border-radius: 4px; font-size: 12px; color: #fbbf24; }
+
+/* Misconceptions */
+.miscon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-radius: 16px;
+  overflow: hidden; border: 1px solid var(--border); }
+.miscon-header { background: var(--surface2); padding: 16px 24px; font-weight: 700; font-size: 15px;
+  text-align: center; }
+.miscon-header.wrong { color: #f87171; }
+.miscon-header.right { color: #34d399; }
+.miscon-cell { padding: 16px 24px; border-bottom: 1px solid var(--border); font-size: 14px; line-height: 1.7; }
+.miscon-cell.wrong { background: rgba(248,113,113,0.05); color: #fca5a5; }
+.miscon-cell.right { background: rgba(52,211,153,0.05); color: #6ee7b7; }
+.miscon-cell .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px;
+  margin-right: 6px; font-weight: 600; }
+.miscon-cell .tag.x { background: rgba(248,113,113,0.2); color: #f87171; }
+.miscon-cell .tag.check { background: rgba(52,211,153,0.2); color: #34d399; }
+
+/* Evolution */
+.evo-container { background: var(--surface); border-radius: 16px; border: 1px solid var(--border);
+  padding: 32px; }
+.evo-controls { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+.evo-btn { padding: 8px 20px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.evo-btn:hover { border-color: #60a5fa; color: #60a5fa; }
+.evo-btn.primary { background: rgba(96,165,250,0.15); border-color: #60a5fa; color: #60a5fa; }
+.evo-slider { flex: 1; -webkit-appearance: none; height: 6px; background: var(--surface2);
+  border-radius: 3px; outline: none; }
+.evo-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px;
+  background: #60a5fa; border-radius: 50%; cursor: pointer; }
+.evo-stage { display: none; }
+.evo-stage.active { display: block; }
+.evo-stage h3 { font-size: 20px; color: #60a5fa; margin-bottom: 8px; }
+.evo-stage .era { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+.evo-stage .desc { font-size: 14px; line-height: 1.8; color: var(--text); margin-bottom: 20px; }
+.evo-stage .mechanisms { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.mech-card { background: var(--surface2); border-radius: 8px; padding: 16px; }
+.mech-card h5 { font-size: 13px; color: #fbbf24; margin-bottom: 6px; }
+.mech-card p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.evo-canvas { width: 100%; height: 300px; margin-bottom: 20px; border-radius: 12px;
+  background: rgba(0,0,0,0.3); }
+
+/* Insight Panel (new) */
+.insight-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 24px; margin-top: 32px; }
+.insight-panel h3 { font-size: 18px; color: #a78bfa; margin-bottom: 16px; }
+.insight-row { display: flex; gap: 16px; margin-bottom: 12px; align-items: flex-start; }
+.insight-badge { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+  white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
+.insight-badge.warn { background: rgba(251,191,36,0.15); color: #fbbf24; }
+.insight-badge.danger { background: rgba(248,113,113,0.15); color: #f87171; }
+.insight-badge.safe { background: rgba(52,211,153,0.15); color: #34d399; }
+.insight-text { font-size: 14px; color: var(--text2); line-height: 1.7; }
+
+@media (max-width: 768px) {
+  .hero h1 { font-size: 28px; }
+  .rules-grid { grid-template-columns: 1fr; }
+  .miscon-grid { grid-template-columns: 1fr; }
+  .graph-container { height: 500px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-title">社会底层逻辑</div>
+  <a class="active" onclick="showSection('graph',this)">关系图谱</a>
+  <a onclick="showSection('rules',this)">规则清单</a>
+  <a onclick="showSection('scenario',this)">实践映射</a>
+  <a onclick="showSection('misconception',this)">认知纠偏</a>
+  <a onclick="showSection('evolution',this)">演化动画</a>
+</nav>
+
+<!-- ===== 1. 可视化关系图谱 ===== -->
+<div id="graph" class="section active">
+  <div class="hero">
+    <h1>社会运行底层逻辑图谱</h1>
+    <p>三层架构：宏观结构（权力·资源·信息）→ 微观博弈（定位·博弈·跃升）→ 系统演化（信任·交换·规范）<br>整合吴思潜规则体系、布迪厄资本理论、弱关系/结构洞、天涯神贴智慧</p>
+    <div class="hero-tags">
+      <span class="hero-tag">吴思：元规则·潜规则·血酬·法酬</span>
+      <span class="hero-tag">布迪厄：四资本·惯习·场域</span>
+      <span class="hero-tag">格兰诺维特·伯特·边燕杰</span>
+      <span class="hero-tag">四差理论：信息差→认知差→资源差→执行差</span>
+      <span class="hero-tag">天涯神贴：阶层跃升·认知障碍</span>
+    </div>
+  </div>
+  <div class="graph-container" id="graphCanvas">
+    <svg id="graphSvg"></svg>
+    <div class="graph-tooltip" id="graphTooltip"></div>
+    <div class="graph-legend">
+      <span><span class="dot" style="background:#f87171"></span>宏观结构</span>
+      <span><span class="dot" style="background:#60a5fa"></span>微观博弈</span>
+      <span><span class="dot" style="background:#34d399"></span>系统演化</span>
+      <span><span class="dot" style="background:#fbbf24"></span>核心机制</span>
+    </div>
+  </div>
+
+  <div class="insight-panel">
+    <h3>天涯神贴精华：三层认知时间差</h3>
+    <div class="insight-row">
+      <span class="insight-badge safe">上层</span>
+      <span class="insight-text">10多岁就看透社会运行逻辑，不用担心失败成本——家族托举+贵人指引，试错成本几乎为零</span>
+    </div>
+    <div class="insight-row">
+      <span class="insight-badge warn">中层</span>
+      <span class="insight-text">35-40岁才明白潜规则，但已被生活钉在十字架上——房贷、家庭、稳定需求让改变几乎不可能</span>
+    </div>
+    <div class="insight-row">
+      <span class="insight-badge danger">底层</span>
+      <span class="insight-text">一辈子都没搞清楚，把一切归结为"命"——不是智力问题，而是根本没有机会接触真实运行逻辑</span>
+    </div>
+    <div class="insight-row">
+      <span class="insight-badge safe">关键洞察</span>
+      <span class="insight-text">你正在读这个系统，意味着你有机会比同龄人早10-20年理解底层逻辑。但理解≠成功——还需要执行差和资源差的弥补</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 2. 规则清单 ===== -->
+<div id="rules" class="section">
+  <div class="hero">
+    <h1>12条铁律</h1>
+    <p>从宏观权力结构到微观生存策略，融合吴思、布迪厄、社会网络理论与天涯神贴智慧，提炼社会运行的核心规则</p>
+  </div>
+  <div class="rules-grid" id="rulesGrid"></div>
+</div>
+
+<!-- ===== 3. 实践场景映射 ===== -->
+<div id="scenario" class="section">
+  <div class="hero">
+    <h1>实践场景映射</h1>
+    <p>从刚踏入社会的年轻人视角，将底层逻辑映射到真实场景——不仅是"知道"，更是"做到"</p>
+  </div>
+  <div class="scenario-tabs" id="scenarioTabs"></div>
+  <div id="scenarioContents"></div>
+</div>
+
+<!-- ===== 4. 认知误区对照 ===== -->
+<div id="misconception" class="section">
+  <div class="hero">
+    <h1>认知纠偏</h1>
+    <p>你以为的 vs 真正运行的——最常见的认知偏差，每一个都可能导致重大决策失误</p>
+  </div>
+  <div class="miscon-grid" id="misconGrid"></div>
+</div>
+
+<!-- ===== 5. 演化动画 ===== -->
+<div id="evolution" class="section">
+  <div class="hero">
+    <h1>社会系统演化</h1>
+    <p>从原始信任到认知竞争——观察社会底层逻辑如何在历史中层层叠加</p>
+  </div>
+  <div class="evo-container">
+    <div class="evo-controls">
+      <button class="evo-btn primary" id="evoPlayBtn" onclick="toggleEvolution()">&#9654; 播放</button>
+      <input type="range" class="evo-slider" id="evoSlider" min="0" max="5" step="1" value="0" oninput="setEvoStage(this.value)">
+      <span id="evoStageLabel" style="font-size:14px;color:var(--text2);min-width:120px">阶段 0/5</span>
+    </div>
+    <canvas class="evo-canvas" id="evoCanvas"></canvas>
+    <div id="evoStages"></div>
+  </div>
+</div>
+
+<script>
+// ========== Navigation ==========
+function showSection(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  if (id === 'graph') drawGraph();
+  if (id === 'evolution') { initEvoCanvas(); setEvoStage(currentEvoStage); }
+}
+
+// ========== 1. Relationship Graph ==========
+const graphData = {
+  nodes: [
+    // 宏观结构层 (red)
+    { id:'power', label:'权力/元规则', layer:'macro', color:'#f87171', r:34,
+      desc:'元规则：暴力最强者说了算（吴思）。权力是资源分配的终极决定因素。正如吴思在BBC访谈中指出，元规则不必总以赤裸暴力出现——在美国，选民是暴力最强者，因为总统是三军总司令。不要只看制度写了什么，更要看谁能解释制度、执行制度、修改制度。' },
+    { id:'resource', label:'资源', layer:'macro', color:'#f87171', r:28,
+      desc:'经济资本（布迪厄）：土地、金钱、生产资料。资源的稀缺性是一切博弈的源头。天涯神贴指出：资本制定规则，让穷人相互内卷，相互制约，最终将他们彻底锁死。' },
+    { id:'info', label:'信息', layer:'macro', color:'#f87171', r:28,
+      desc:'信息不对称（阿克洛夫/Arrow）：谁掌握信息优势，谁就掌握定价权和谈判权。四差链条的起点：信息差→认知差→资源差→执行差。' },
+    { id:'law', label:'正式制度', layer:'macro', color:'#f87171', r:22,
+      desc:'明规则：法律、规章、公开制度。明规则的目标是维护公平竞争和可信度。但正式制度常被潜规则架空或选择性执行。' },
+    { id:'hidden_rule', label:'潜规则', layer:'macro', color:'#fbbf24', r:26,
+      desc:'吴思核心概念：正式制度之外、私下认可的行为约束。潜规则的三特征：①非正式 ②实际运行 ③利益导向——服务于执行者而非设计者。重要：潜规则不总是负面的，在恶法之下可能起正面作用。' },
+    { id:'blood_reward', label:'血酬/法酬', layer:'macro', color:'#f87171', r:22,
+      desc:'吴思：血酬是暴力的报酬，以生命为代价从事暴力掠夺的收益；法酬=全部税收-公共开支，是血酬的升级版，具有合法外形的攫取。核心：赤裸掠夺减少后，攫取并未消失，而是通过合法程序被包装。' },
+
+    // 微观博弈层 (blue)
+    { id:'position', label:'定位', layer:'micro', color:'#60a5fa', r:28,
+      desc:'你在社会网络中的位置决定了你能获取的资源。伯特的结构洞理论：你的位置比努力更能决定天花板。天涯神贴核心观点：阶层跨越的第一关是人性认知——底层出身越容易患社交恐惧症。' },
+    { id:'game', label:'博弈', layer:'micro', color:'#60a5fa', r:28,
+      desc:'社会互动本质是博弈。关键在于识别博弈类型：合作博弈（交换）vs竞争博弈（零和）。天涯神贴警示：动了资本的利益如同谋害他的性命，动了穷人的观点如同掘了他们的祖坟。' },
+    { id:'leap', label:'跃升', layer:'micro', color:'#60a5fa', r:26,
+      desc:'阶层跃升路径：资本转换（布迪厄）——将一种资本形式转化为另一种。天涯神贴：阶层跃升要过三关——人性认知关、资本积累关、圈层突破关。每关都是筛选，多数人卡在第一关。' },
+    { id:'weak_tie', label:'弱关系', layer:'micro', color:'#60a5fa', r:22,
+      desc:'格兰诺维特经典研究：54人通过关系找到工作，但帮助者中仅16.7%是每周见面的人。弱关系传递异质性信息，"熟人"比"朋友"更有用。同温层提供支持，跨圈层提供机会。' },
+    { id:'struct_hole', label:'结构洞', layer:'micro', color:'#60a5fa', r:22,
+      desc:'伯特：连接两个互不连通网络的节点拥有信息优势和控制优势。你连接的群体越不连通，你的独特价值越大。做"桥梁"比做"中心"更有价值。' },
+    { id:'strong_tie', label:'强关系', layer:'micro', color:'#60a5fa', r:22,
+      desc:'边燕杰：在中国情境下，强关系（深度信任）是获取核心资源的关键。弱关系=信息桥梁，告诉你"哪里有门"；强关系=信任通道，帮你"把门打开"。' },
+    { id:'cognitive_barrier', label:'认知障碍', layer:'micro', color:'#fbbf24', r:22,
+      desc:'天涯神贴核心概念：底层出身的人最大障碍不是能力，而是对人性不熟悉。社交恐惧症的根源是对人性缺乏理解。越是底层家庭，越容易形成"社交恐惧→信息封闭→资源匮乏"的恶性循环。' },
+
+    // 系统演化层 (green)
+    { id:'trust', label:'信任', layer:'evo', color:'#34d399', r:28,
+      desc:'信任是社会的"润滑剂"（阿罗）。从人际信任到制度信任，信任降低交易成本、扩大合作半径。现代制度并未让关系消失，而是让关系以更复杂方式嵌入制度环境。' },
+    { id:'exchange', label:'交换', layer:'evo', color:'#34d399', r:26,
+      desc:'社会交换理论：一切社会互动都是交换。交换的核心是等价与互惠。法酬公式衡量制度净收益——当执行潜规则的收益高于明规则时，潜规则就会替代明规则。' },
+    { id:'norm', label:'规范', layer:'evo', color:'#34d399', r:24,
+      desc:'规范是演化的产物：从习俗到道德再到法律。规范降低不确定性，但也固化不平等。三种固化机制：道德化、自然化、去历史化——把利益结构包装为"理所当然"。' },
+    { id:'habitus', label:'惯习', layer:'evo', color:'#34d399', r:22,
+      desc:'布迪厄：惯习是一套持久、可转换的潜在行为倾向系统，是"被结构化的结构"。你的品味、偏好、行为方式不是"天生"的，而是阶层塑造的。它让个体在看似自由的选择中重复原有阶层路径。' },
+    { id:'cognition', label:'认知差', layer:'evo', color:'#fbbf24', r:24,
+      desc:'四差链条核心：信息差→认知差→资源差→执行差。认知差是决定性差距——同样信息，不同解读和行动。警惕：知乎上"认知差"常被误用为自我优越幻觉和"认知炫耀"。' },
+    { id:'capital', label:'资本转换', layer:'evo', color:'#fbbf24', r:22,
+      desc:'经济资本⇄文化资本⇄社会资本⇄象征资本。四种资本的相互转换是社会流动的核心机制。关键：象征暴力——被支配者把自身被支配状态视为正当，这是最深层的固化。' },
+  ],
+  edges: [
+    { from:'power', to:'resource', label:'支配', type:'macro' },
+    { from:'power', to:'info', label:'控制', type:'macro' },
+    { from:'power', to:'law', label:'制定', type:'macro' },
+    { from:'power', to:'hidden_rule', label:'产生', type:'macro' },
+    { from:'power', to:'blood_reward', label:'背书', type:'macro' },
+    { from:'hidden_rule', to:'law', label:'架空', type:'macro' },
+    { from:'blood_reward', to:'hidden_rule', label:'驱动', type:'macro' },
+    { from:'resource', to:'info', label:'获取', type:'macro' },
+    { from:'power', to:'position', label:'决定', type:'cross' },
+    { from:'resource', to:'game', label:'筹码', type:'cross' },
+    { from:'info', to:'weak_tie', label:'传递', type:'cross' },
+    { from:'hidden_rule', to:'strong_tie', label:'依赖', type:'cross' },
+    { from:'resource', to:'cognitive_barrier', label:'匮乏→', type:'cross' },
+    { from:'position', to:'game', label:'影响', type:'micro' },
+    { from:'position', to:'leap', label:'前提', type:'micro' },
+    { from:'weak_tie', to:'struct_hole', label:'创造', type:'micro' },
+    { from:'struct_hole', to:'leap', label:'通道', type:'micro' },
+    { from:'strong_tie', to:'game', label:'增强', type:'micro' },
+    { from:'game', to:'leap', label:'路径', type:'micro' },
+    { from:'cognitive_barrier', to:'position', label:'阻碍', type:'micro' },
+    { from:'leap', to:'trust', label:'构建', type:'cross' },
+    { from:'game', to:'exchange', label:'本质', type:'cross' },
+    { from:'strong_tie', to:'trust', label:'基础', type:'cross' },
+    { from:'trust', to:'exchange', label:'支撑', type:'evo' },
+    { from:'exchange', to:'norm', label:'沉淀', type:'evo' },
+    { from:'norm', to:'habitus', label:'内化', type:'evo' },
+    { from:'habitus', to:'cognition', label:'塑造', type:'evo' },
+    { from:'cognition', to:'capital', label:'驱动', type:'evo' },
+    { from:'capital', to:'trust', label:'积累', type:'evo' },
+    { from:'norm', to:'law', label:'固化', type:'cross' },
+    { from:'capital', to:'resource', label:'转化', type:'cross' },
+  ]
+};
+
+let graphDrawn = false;
+function drawGraph() {
+  if (graphDrawn) return;
+  graphDrawn = true;
+
+  const svg = document.getElementById('graphSvg');
+  const container = document.getElementById('graphCanvas');
+  const W = container.clientWidth, H = container.clientHeight;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const layerY = { macro: H*0.2, micro: H*0.5, evo: H*0.8 };
+  const bgColors = ['rgba(248,113,113,0.03)', 'rgba(96,165,250,0.03)', 'rgba(52,211,153,0.03)'];
+  const layerLabels = [
+    { text:'宏观结构层', y: layerY.macro - 70, sub:'权力·元规则·资源·信息·血酬·法酬·制度' },
+    { text:'微观博弈层', y: layerY.micro - 70, sub:'定位·博弈·跃升·弱关系·结构洞·强关系·认知障碍' },
+    { text:'系统演化层', y: layerY.evo - 70, sub:'信任·交换·规范·惯习·认知差·资本转换' },
+  ];
+
+  [0,1,2].forEach(i => {
+    const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x', 20); rect.setAttribute('width', W-40);
+    rect.setAttribute('y', layerY[i===0?'macro':i===1?'micro':'evo'] - 60);
+    rect.setAttribute('height', 120); rect.setAttribute('rx', 12);
+    rect.setAttribute('fill', bgColors[i]); svg.appendChild(rect);
+  });
+
+  layerLabels.forEach(l => {
+    const t1 = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t1.setAttribute('x', 40); t1.setAttribute('y', l.y);
+    t1.classList.add('layer-label'); t1.textContent = l.text; svg.appendChild(t1);
+    const t2 = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t2.setAttribute('x', 40); t2.setAttribute('y', l.y + 18);
+    t2.setAttribute('fill', '#64748b'); t2.setAttribute('font-size', '11px');
+    t2.textContent = l.sub; svg.appendChild(t2);
+  });
+
+  const macroNodes = graphData.nodes.filter(n => n.layer === 'macro');
+  const microNodes = graphData.nodes.filter(n => n.layer === 'micro');
+  const evoNodes = graphData.nodes.filter(n => n.layer === 'evo');
+
+  function layoutRow(nodes, y, totalW, startX) {
+    const gap = totalW / (nodes.length + 1);
+    nodes.forEach((n, i) => { n.x = startX + gap * (i + 1); n.y = y; });
+  }
+  layoutRow(macroNodes, layerY.macro, W - 180, 90);
+  layoutRow(microNodes, layerY.micro, W - 140, 70);
+  layoutRow(evoNodes, layerY.evo, W - 140, 70);
+
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  const marker = document.createElementNS('http://www.w3.org/2000/svg','marker');
+  marker.setAttribute('id','arrow'); marker.setAttribute('viewBox','0 0 10 10');
+  marker.setAttribute('refX','10'); marker.setAttribute('refY','5');
+  marker.setAttribute('markerWidth','6'); marker.setAttribute('markerHeight','6');
+  marker.setAttribute('orient','auto');
+  const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+  path.setAttribute('d','M 0 0 L 10 5 L 0 10 z'); path.setAttribute('fill','#475569');
+  marker.appendChild(path); defs.appendChild(marker); svg.appendChild(defs);
+
+  const nodeMap = {};
+  graphData.nodes.forEach(n => nodeMap[n.id] = n);
+
+  graphData.edges.forEach(e => {
+    const from = nodeMap[e.from], to = nodeMap[e.to];
+    if (!from || !to) return;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', from.x); line.setAttribute('y1', from.y);
+    line.setAttribute('x2', to.x); line.setAttribute('y2', to.y);
+    line.setAttribute('stroke', e.type === 'cross' ? '#6366f1' : '#475569');
+    line.setAttribute('stroke-width', e.type === 'cross' ? '1.5' : '1');
+    line.setAttribute('stroke-dasharray', e.type === 'cross' ? '6,4' : 'none');
+    line.setAttribute('stroke-opacity', '0.5');
+    line.setAttribute('marker-end','url(#arrow)');
+    svg.appendChild(line);
+
+    const mx = (from.x + to.x) / 2, my = (from.y + to.y) / 2;
+    const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x', mx); txt.setAttribute('y', my - 6);
+    txt.setAttribute('text-anchor','middle'); txt.setAttribute('font-size','10px');
+    txt.setAttribute('fill','#64748b'); txt.textContent = e.label;
+    svg.appendChild(txt);
+  });
+
+  const tooltip = document.getElementById('graphTooltip');
+  graphData.nodes.forEach(n => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.style.cursor = 'pointer';
+    const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx', n.x); circle.setAttribute('cy', n.y);
+    circle.setAttribute('r', n.r); circle.setAttribute('fill', n.color + '22');
+    circle.setAttribute('stroke', n.color); circle.setAttribute('stroke-width','2');
+    g.appendChild(circle);
+    const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.setAttribute('x', n.x); text.setAttribute('y', n.y + 5);
+    text.setAttribute('text-anchor','middle'); text.setAttribute('font-size', n.r > 28 ? '13px' : '11px');
+    text.setAttribute('font-weight','600'); text.setAttribute('fill', n.color);
+    text.textContent = n.label; g.appendChild(text);
+
+    g.addEventListener('mouseenter', (ev) => {
+      circle.setAttribute('fill', n.color + '44'); circle.setAttribute('r', n.r + 4);
+      tooltip.innerHTML = `<h4>${n.label}</h4>${n.desc}`; tooltip.classList.add('show');
+    });
+    g.addEventListener('mousemove', (ev) => {
+      const rect = container.getBoundingClientRect();
+      tooltip.style.left = (ev.clientX - rect.left + 16) + 'px';
+      tooltip.style.top = (ev.clientY - rect.top - 10) + 'px';
+    });
+    g.addEventListener('mouseleave', () => {
+      circle.setAttribute('fill', n.color + '22'); circle.setAttribute('r', n.r);
+      tooltip.classList.remove('show');
+    });
+    svg.appendChild(g);
+  });
+}
+
+// ========== 2. Rules ==========
+const rules = [
+  { num:1, title:'元规则：暴力最强者说了算', sub:'一切规则的规则',
+    body:'社会运行的终极元规则是：<strong>暴力最强者拥有规则制定权</strong>。法律、制度、道德，最终都由暴力的垄断者（国家）背书。吴思指出：元规则不必总以赤裸暴力出现——在美国，选民是暴力最强者，因为总统是三军总司令由选民选出。',
+    detail:'法酬公式：法酬 = 全部税收 - 公共开支。法酬是血酬的升级版，具有合法外形的攫取。当执行潜规则的收益高于明规则时，潜规则就会替代明规则。胡平批评：吴思理论把所有行为归结为利益最大化，难以解释理想主义者的行为。使用这个框架时，要避免滑向"所有制度都只是强力外壳"的极端犬儒。', source:'吴思《血酬定律》BBC访谈' },
+  { num:2, title:'潜规则是真正的运行系统', sub:'写在纸上的未必在运行',
+    body:'<strong>正式制度是面子，潜规则是里子</strong>。潜规则并非单纯指"腐败"或"违法"，而是一整套未写进制度、却能稳定影响行为与结果的约束体系。忽视潜规则，就是主动放弃博弈能力。',
+    detail:'重要修正：潜规则不总是负面的。吴思明确指出，在恶法之下潜规则可能起正面作用。知乎常见偏差是把潜规则一概等同于阴暗面，但原始表述并非如此简单。关键问题不是"有没有潜规则"，而是"谁在执行、谁受益、谁被排除"。', source:'吴思《潜规则》' },
+  { num:3, title:'信息差是一切利润的源头', sub:'你知道的别人不知道，就是优势',
+    body:'<strong>信息不对称是市场和社会运作的基础</strong>。阿克洛夫的"柠檬市场"证明信息差不仅产生利润，还决定市场存亡。四差链条：信息差→认知差→资源差→执行差。',
+    detail:'信息差的三种获取方式：①位置优势（结构洞）②网络优势（弱关系跨圈层）③专业优势（解读能力）。警惕：知乎上"认知差"常被误用为自我优越幻觉——"认知炫耀"用复杂词汇掩盖浅层理解，"结构性傲慢"忽视底层结构约束。判断标准：你的认知升级是否改善了判断、资源配置或执行？', source:'阿克洛夫 信息不对称；知乎"认知差"讨论' },
+  { num:4, title:'定位决定命运，而非努力', sub:'在正确的地方做正确的事',
+    body:'<strong>社会网络中的位置比个人努力更能决定你的天花板</strong>。伯特的结构洞理论：你所在的位置决定了你的天花板，你再努力也只能爬到那个天花板。选对赛道比跑得快更重要。',
+    detail:'天涯神贴核心观点：阶层跨越要过三关——第一关是人性认知。越是底层家庭出身，越容易患社交恐惧症，对人性不熟悉。长大后将绝大部分精力投放于学业和技能，却忽视了最关键的"人"的层面。这不是能力问题，是结构性问题。', source:'伯特 结构洞理论；天涯神贴' },
+  { num:5, title:'四种资本可以相互转换', sub:'布迪厄的资本转换定律',
+    body:'<strong>经济资本、文化资本、社会资本、象征资本可以相互转换</strong>。用钱买学历（经济→文化），用学历进入圈层（文化→社会），用圈层获取地位（社会→象征），用地位变现（象征→经济）。',
+    detail:'象征暴力：布迪厄最重要的概念之一——被支配者把自身被支配状态视为正当。"我本来就不适合""那不是我的世界"这种自我排除，比外部禁止更有效。教育在布迪厄研究中居于中心位置：它既是文化资本积累的渠道，也是阶层再生产最有效的工具。', source:'布迪厄《实践感》' },
+  { num:6, title:'强关系决定你能走多远', sub:'中国情境下的信任逻辑',
+    body:'<strong>在人情社会中，强关系（深度信任）是获取核心资源的关键</strong>。弱关系提供信息，强关系提供机会和资源。格兰诺维特数据：找工作的人中仅16.7%靠强关系，但高阶层职位主要靠强关系。',
+    detail:'策略组合：用弱关系扫探信息（"哪里有门"），用强关系兑现机会（"把门打开"）。天涯神贴警示：100个点赞之交不如3个深夜可以打电话的人。但同时，数字时代的弱关系有了新形态——社交媒体扩展了弱关系，但"一言不合就拉黑"的任意性也削弱了关系深度。', source:'格兰诺维特；边燕杰；知乎讨论' },
+  { num:7, title:'信任是最高价值的硬通货', sub:'阿罗：信任是社会的润滑剂',
+    body:'<strong>信任降低一切交易成本</strong>。有信任，合作可以发生；没有信任，一切退化为零和博弈。现代制度并未让关系消失，而是让关系以更复杂方式嵌入制度环境。',
+    detail:'信任的三层结构：①人际信任（家族、同乡）②制度信任（法律、合同）③系统信任（货币、市场）。年轻人的信任建设：从"可预测性"开始——人们信任的不是好人，而是可预测的人。一次失约的信任损失，需要7次守信来弥补。', source:'阿罗；吴思' },
+  { num:8, title:'惯习是无形的阶层壁垒', sub:'你"自然"的选择，其实是被塑造的',
+    body:'<strong>惯习是一套持久、可转换的潜在行为倾向系统</strong>。布迪厄指出：惯习让个体在看似自由的选择中重复原有阶层路径。你以为的自由选择，可能是惯习的自动运行。',
+    detail:'惯习的三种区隔机制：①审美区隔——你觉得"不合适"的，可能正是上层通行证；②语言风格——措辞、话题、幽默都是阶层标记；③时间偏好——下层惯习偏好即时满足。突破方法：有意识地观察和模仿目标阶层的惯习——不是"装"，而是理解另一套规则系统。但要警惕：不要在突破惯习时迷失自我认同。', source:'布迪厄' },
+  { num:9, title:'资源依赖决定你的自由度', sub:'谁控制你需要的资源，谁就控制你',
+    body:'<strong>自由不是没有约束，而是减少关键资源的依赖</strong>。拥有替代方案（BATNA）是一切谈判的底气。没有退路的选择不是选择，是赌博。',
+    detail:'年轻人的资源依赖陷阱：①经济依赖——只依赖一份工资，不敢说"不"；②信息依赖——只从一个渠道获取信息，认知被框定；③情感依赖——只在一个圈子里获得认同。策略：始终维护至少两个替代方案。但注意BATNA也需要投入资源维护——这是一种长期投资。', source:'资源依赖理论' },
+  { num:10, title:'规范是固化不平等的合法化工具', sub:'统治阶级的思想是统治思想',
+    body:'<strong>社会规范不是中性的共识，而是权力结构的合法化表达</strong>。什么被认为是"正常""合理""应该"的，往往服务于既得利益者。',
+    detail:'三种固化机制：①道德化——"要感恩""要忠诚"②自然化——"人家就是有天赋"③去历史化——"从来就是这样"。天涯神贴补充：资本制定规则让穷人相互内卷、相互制约，最终彻底锁死。关键防御：对每一条"应该如此"保持追问——这是谁设定的？谁受益？谁被排除？', source:'马克思；天涯神贴' },
+  { num:11, title:'认知障碍是底层最大的枷锁', sub:'天涯神贴：底层出身的人性盲区',
+    body:'<strong>底层出身最大的障碍不是能力，而是对人性不熟悉</strong>。越是底层家庭，越容易患社交恐惧症。长大后把精力投放于学业和技能，却忽视了"人"的层面——这是结构性的，不是个人选择。',
+    detail:'天涯神贴的深层逻辑：底层出身的人从小缺乏与不同层次人打交道的环境，导致"社交恐惧→信息封闭→资源匮乏"的恶性循环。他们不是不想社交，而是不知道如何社交。关键突破：社交能力像肌肉，需要刻意练习。不是"变圆滑"，而是学会理解他人的需求和动机。每次行动前做心理建设和行为练习，直到成为自然。', source:'天涯神贴' },
+  { num:12, title:'幸存者偏差：看到的成功≠普遍规律', sub:'警惕成功学包装的底层逻辑',
+    body:'<strong>任何"某人靠洞察底层逻辑实现逆袭"的故事，都不能直接推出普遍可复制</strong>。你看到的成功案例，只是筛选后的结果——沉默的失败样本不会出现在你的信息流中。',
+    detail:'知乎上"底层逻辑"讨论的两大误用：①把少数成功样本当普遍规律——"我认识某人靠一个关系就翻身"；②把"认知提升"神化——换了一套术语制造优越感，但行动没有变化。真正的验证标准：你的"认知升级"是否改善了判断、资源配置或执行？如果没有，那只是认知表演。', source:'幸存者偏差；知乎讨论' },
+];
+
+function renderRules() {
+  const grid = document.getElementById('rulesGrid');
+  rules.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'rule-card';
+    card.onclick = () => card.classList.toggle('expanded');
+    card.innerHTML = `
+      <div class="rule-num">${String(r.num).padStart(2,'0')}</div>
+      <h3>铁律${r.num}：${r.title}</h3>
+      <div class="rule-sub">${r.sub}</div>
+      <div class="rule-body">${r.body}</div>
+      <div class="rule-detail">${r.detail}<br><span class="source">来源：${r.source}</span></div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ========== 3. Scenarios ==========
+const scenarios = [
+  { id:'job', label:'求职就业', icon:'💼', steps:[
+    { title:'识别结构洞——信息枢纽在哪里', body:'分析目标行业的信息流动网络：谁掌握招聘信息？谁连接不同部门？找到信息枢纽节点。格兰诺维特数据：仅16.7%的求职通过强关系成功——机会来自信息异质性的弱关系。', tip:'弱关系是你获取招聘信息的主要通道，广撒网式地维护弱关系' },
+    { title:'资本转换规划——盘点你的四资本', body:'学历（文化资本）→ 实习/项目（社会资本）→ offer（经济资本）。明确每一步要转化什么。如果什么都没有，先积累文化资本——这是最可控的起点。', tip:'实习的本质不是学技能，是积累社会资本和证明文化资本' },
+    { title:'展现可预测性——雇主要的是确定性', body:'面试的核心不是证明你多优秀，而是证明你是"低风险"的选择——可预测、可信任、可合作。用具体案例证明你的可预测性。', tip:'雇主要的是"确定性"——用STAR法则（情境-任务-行动-结果）讲具体故事' },
+    { title:'建立BATNA——永远不要只有一个offer', body:'多个选择不仅增加成功率，还会改变你在谈判中的姿态和底气。没有替代方案就没有议价权。', tip:'BATNA是谈判的根基。三种收入来源比一种高收入更安全' },
+  ]},
+  { id:'career', label:'职场晋升', icon:'🚀', steps:[
+    { title:'定位你的结构位置——你连接谁？依赖谁？', body:'画出你的职场关系网络：你连接了哪些人？谁依赖你？你依赖谁？如果你不是任何结构洞，你就可被替代。让自己成为信息必经节点。', tip:'天涯神贴：向上社交，尽可能地跟上层的高人、大佬建立联系' },
+    { title:'理解潜规则体系——观察谁被提拔了', body:'晋升的明规则是KPI和制度，潜规则是：谁推荐你？谁信任你？你属于哪个"派系"？观察谁被提拔了、提拔的原因是什么——那才是真正的晋升规则。', tip:'忽视潜规则等于放弃竞争——你遵守的规则，别人可能正在选择性执行' },
+    { title:'积累象征资本——建立专业权威', body:'在组织内建立"专业权威"形象——被引用、被咨询、被认可。象征资本让你在正式考核之外获得额外权重。', tip:'在关键会议上发言、撰写内部知识文档、成为某领域的go-to person' },
+    { title:'管理资源依赖——减少对单一上级的依赖', body:'向上管理重要，但横向联盟同样关键。如果只依赖一个人，你的命运就只由一个人决定——这不是安全，是风险。', tip:'被需要比被喜欢更重要——议价能力来自不可替代性' },
+  ]},
+  { id:'social', label:'社交与人脉', icon:'🤝', steps:[
+    { title:'区分强关系与弱关系功能——各有价值', body:'强关系（3-5人）提供情感支持和核心资源；弱关系（30-50人）提供信息和新机会。两者功能不同，都需要经营。100个点赞之交不如3个深夜可打电话的人。', tip:'常见误区：只加微信群（弱关系泛滥），却没有可以深夜打电话的强关系' },
+    { title:'做有价值的结构洞——连接不同圈层', body:'连接不同圈层：行业内外、公司内外、城市之间。你连接的群体越不连通，你的信息优势越大。一个连接互联网圈和传统行业的人，比两个圈内的深度参与者更有独特价值。', tip:'天涯神贴核心：阶层跨越第一关是人性认知——学会与不同层次的人打交道' },
+    { title:'信任建设：从可预测性开始', body:'人们信任"可预测"的人，而不是"好人"。按时交付、言出必行、保持一致——这些比讨好和送礼更有效。一次失约需要7次守信来弥补。', tip:'一致性比强度重要——长期可靠比偶尔出彩更有价值' },
+    { title:'等价交换，但不等量交换——人情储蓄', body:'社交交换的核心是互惠，但不需要每次等量。关键是在对方需要时你能提供价值，形成"人情储蓄"。提前储备你能提供的独特价值。', tip:'动了资本的利益如同谋害他的性命，动了穷人的观点如同掘了他们的祖坟——理解交换中的敏感区' },
+  ]},
+  { id:'money', label:'财富积累', icon:'💰', steps:[
+    { title:'识别信息差机会——信息差→认知差→利润', body:'财富的本质是信息差的变现。四差链条：信息差→认知差→资源差→执行差。信息差是起点，认知差是放大器。天涯神贴：资本通过猎杀穷人获得财富。', tip:'三种获取方式：位置优势（结构洞）、网络优势（弱关系）、专业优势（解读能力）' },
+    { title:'文化资本变现——找到稀缺性定位', body:'专业技能是最可控的文化资本。将技能转化为收入的关键不是"更努力"，而是找到技能的稀缺性定位。稀缺性=需求/供给。', tip:'选一个需求增长快但供给少的领域深耕' },
+    { title:'从线性收入到结构收入', body:'打工是线性收入（时间×单价），财富积累需要结构收入（一次投入，持续回报）。第一步：增加线性收入；第二步：将线性收入转化为能产生被动收入的资产。', tip:'三种收入来源比一种高收入更安全——即使每种都只有中等水平' },
+    { title:'减少资源依赖——降低必需支出占比', body:'财务自由的核心不是收入高，而是"必需支出占收入比低"。减少对单一收入来源的依赖是第一步。', tip:'天涯神贴：从封建社会多收三五斗到现代消费主义，资本始终把穷人困在最底层——主动减少消费主义陷阱' },
+  ]},
+  { id:'choice', label:'人生选择', icon:'🧭', steps:[
+    { title:'识别惯习的自动运行——质疑"理所当然"', body:'当你觉得"我当然应该这样做"时，停下来——这可能是惯习在自动运行。追问：这是我的选择，还是我阶层的默认设置？越是"当然如此"的选择，越值得质疑。', tip:'惯习的特征是"觉得理所当然"——越是理所当然，越可能是被塑造的' },
+    { title:'用结构视角评估选择——三维判断', body:'不要只看"我想做什么"，而要看"这个选择在社会结构中的位置"：它连接哪些网络？它通向哪些资源？它依赖哪些条件？好选择=你擅长×社会需要×竞争不激烈。', tip:'天涯神贴：底层出身的人走向社会后，不能一直脚走路，还要多挤出时间多读书，增加视野和认知' },
+    { title:'维护你的BATNA——有退路才有选择', body:'在做重大选择前，确保你有退路。没有退路的选择不是选择，是赌博。BATNA让你在任何博弈中不至于输到底。', tip:'最危险的不是选错，而是没有替代方案时的被迫选择' },
+    { title:'用"四差"诊断困境——精准定位差距', body:'当你感到"努力了但没结果"时，用四差链条诊断：是信息差（不知道机会）？认知差（看到了但不理解）？资源差（理解了但没条件）？执行差（有条件但没行动）？', tip:'执行差是唯一完全可控的变量——在可达目标上形成持续输出，比空谈"认知升级"更可验证' },
+  ]},
+];
+
+function renderScenarios() {
+  scenarios.forEach((s, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'scenario-tab' + (i===0?' active':'');
+    tab.textContent = scenarios[i].icon + ' ' + scenarios[i].label;
+    tab.onclick = () => {
+      document.querySelectorAll('.scenario-tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.scenario-content').forEach(c=>c.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('sc_'+scenarios[i].id).classList.add('active');
+    };
+    document.getElementById('scenarioTabs').appendChild(tab);
+
+    const content = document.createElement('div');
+    content.className = 'scenario-content' + (i===0?' active':'');
+    content.id = 'sc_'+s.id;
+    const flow = document.createElement('div');
+    flow.className = 'scenario-flow';
+    s.steps.forEach((step, si) => {
+      const colors = ['#f87171','#fbbf24','#60a5fa','#34d399'];
+      flow.innerHTML += `
+        <div class="flow-step">
+          <div class="flow-icon" style="background:${colors[si%4]}22;color:${colors[si%4]}">${si+1}</div>
+          <div class="flow-body">
+            <h4>${step.title}</h4>
+            <p>${step.body}</p>
+            <span class="tip">${step.tip}</span>
+          </div>
+        </div>`;
+    });
+    content.appendChild(flow);
+    document.getElementById('scenarioContents').appendChild(content);
+  });
+}
+
+// ========== 4. Misconceptions ==========
+const misconceptions = [
+  { wrong:'只要努力就能成功', right:'努力是必要条件但不是充分条件。定位（网络位置）、资本组合、信息优势共同决定上限。努力的方向比努力的程度更重要。四差链条说明：即使信息、认知、资源都到位，执行差仍是最后一道坎——但反过来，光有执行而缺少前三项，努力只是"高效地做无效的事"。', tag:'努力万能论' },
+  { wrong:'规则都是公平的，按规则来就行', right:'正式规则只是面子，潜规则才是里子。不懂潜规则的人，在博弈中是"透明人"。但注意：潜规则不总是负面的——在恶法之下，潜规则可能起到正面缓冲作用。关键是识别规则背后的利益结构。', tag:'规则迷信' },
+  { wrong:'学历越高越好，读书万能', right:'学历是文化资本，但文化资本必须转换为社会资本和经济资本才有价值。布迪厄指出：教育既是文化资本积累的渠道，也是阶层再生产最有效的工具。学历不是目的，是资本转换的媒介。', tag:'学历崇拜' },
+  { wrong:'认识的人越多越好，广撒网', right:'弱关系提供信息，但强关系才提供核心资源和机会。100个点赞之交不如3个深夜可以打电话的人。网络的价值不在规模，在结构和异质性。数字时代的"一言不合就拉黑"让弱关系更脆弱。', tag:'人脉数量论' },
+  { wrong:'靠个人能力就能搞定一切', right:'社会运行的本质是网络而非个体。你的能力只有在网络中才能被识别、放大和兑现。不构建网络的人，能力只是"潜在能力"。天涯神贴：阶层跨越第一关是人性认知，不是技能。', tag:'个人英雄主义' },
+  { wrong:'有钱就能解决一切', right:'经济资本只是四种资本之一。纯经济资本在缺乏社会资本和象征资本的情况下，转换效率极低。暴发户与老钱的差距就在其他三种资本上。象征暴力——被支配者把自身被支配状态视为正当——是更深层的问题。', tag:'金钱万能论' },
+  { wrong:'社会是不公平的，我改变不了', right:'理解底层逻辑恰恰是为了在规则内找到行动空间。"看见结构"不等于"否认努力"。执行差是唯一完全可控的变量——在可达目标上形成持续输出，比空谈"认知升级"更可验证。', tag:'无力感' },
+  { wrong:'只要选对行业/赛道就行', right:'选对赛道是定位，但赛道内的博弈、资本转换、信任建设才是持续的竞争力。同一赛道里，有人跃升有人沉没，差别在微观博弈能力。', tag:'赛道决定论' },
+  { wrong:'忠诚和服从就能获得回报', right:'在潜规则体系中，单纯的忠诚是"低议价能力"的表现。有替代方案（BATNA）的人才能获得尊重——被需要比被喜欢更重要。', tag:'忠诚陷阱' },
+  { wrong:'我的选择都是自由的', right:'你的"自由选择"很可能被惯习驱动——阶层塑造了你的审美、偏好、风险态度。真正的自由是意识到惯习的存在，并有意识地超越它。象征暴力：你把自身被支配状态视为正当。', tag:'自由幻觉' },
+  { wrong:'看透了底层逻辑就能成功', right:'理解底层逻辑只是补上了认知差——四差链条还有信息差、资源差、执行差。知乎上最大的误用：把"看见结构"等同于"已经成功"，实际上从认知到执行之间有巨大的鸿沟。警惕"认知炫耀"和幸存者偏差。', tag:'认知万能论' },
+  { wrong:'底层出身的人天生就差', right:'底层出身最大的障碍不是能力，而是对人性不熟悉（天涯神贴）。这是结构性的，不是先天的。社交能力像肌肉，需要刻意练习。每次行动前做心理建设和行为练习，直到成为自然——这和学任何技能一样。', tag:'出身决定论' },
+];
+
+function renderMisconceptions() {
+  const grid = document.getElementById('misconGrid');
+  grid.innerHTML = `
+    <div class="miscon-header wrong">&#10005; 常见误区</div>
+    <div class="miscon-header right">&#10003; 底层逻辑</div>`;
+  misconceptions.forEach(m => {
+    grid.innerHTML += `
+      <div class="miscon-cell wrong"><span class="tag x">&#10005;</span>${m.wrong}<br><small style="color:#94a3b8">【${m.tag}】</small></div>
+      <div class="miscon-cell right"><span class="tag check">&#10003;</span>${m.right}</div>`;
+  });
+}
+
+// ========== 5. Evolution Animation ==========
+const evoStages = [
+  { title:'原始信任阶段', era:'狩猎采集时代',
+    desc:'社会运行的底层逻辑极其简单：血缘=信任，体力=权力，经验=信息。小群体内的高度信任是唯一的"制度"，交换基于即时的互惠。没有信息差——群体内信息完全透明。',
+    mechanisms:[
+      { title:'血缘绑定', desc:'亲缘是信任的唯一基础，"自己人"和"外人"的分界清晰' },
+      { title:'暴力即权力', desc:'体力最强者领导，最原始的元规则——暴力最强者说了算' },
+      { title:'直接交换', desc:'物物交换，没有中间媒介，信息在小群体内完全透明' },
+    ]},
+  { title:'权威制度化阶段', era:'农业文明与封建时代',
+    desc:'人口增长使直接信任失效，需要制度替代。正式规则出现，但潜规则同步产生——执行规则的人发现"变通"可以获利。吴思的元规则正式化：暴力从个人体力上升为武装力量，国家垄断暴力。法酬公式开始运转。',
+    mechanisms:[
+      { title:'暴力制度化', desc:'国家垄断暴力，元规则从赤裸暴力变为制度化授权' },
+      { title:'潜规则诞生', desc:'执行正式规则的人发现"变通"可以获利，潜规则开始架空明规则' },
+      { title:'信息分层', desc:'文字出现，知识阶层垄断信息，信息差成为系统性现象' },
+    ]},
+  { title:'市场交换扩展阶段', era:'商业革命与早期资本主义',
+    desc:'市场扩大了交换半径，陌生人之间的交易需要新的信任机制。货币、合同、商法出现——从人际信任到制度信任的转型。布迪厄的经济资本开始独立于权力运作。',
+    mechanisms:[
+      { title:'制度信任兴起', desc:'不再依赖个人信任，而是信任制度（货币、合同、法律）' },
+      { title:'经济资本独立', desc:'资本积累不再完全依赖权力庇护，市场提供了独立的积累路径' },
+      { title:'弱关系扩展', desc:'商业网络扩展了弱关系，格兰诺维特的发现：异质信息通过弱关系流动' },
+    ]},
+  { title:'资本体系深化阶段', era:'工业革命与现代性',
+    desc:'四种资本体系完善：经济、文化、社会、象征资本形成完整的转换链条。阶层固化通过惯习和象征暴力实现——教育系统成为最有效的阶层再生产工具。被支配者把自身被支配状态视为正当。',
+    mechanisms:[
+      { title:'资本转换系统化', desc:'经济⇄文化⇄社会⇄象征资本的转换渠道制度化' },
+      { title:'惯习+象征暴力', desc:'教育将阶层偏好内化为"自然选择"；被支配者把自身被支配视为正当' },
+      { title:'结构洞商品化', desc:'中介、经纪人、平台——结构洞的位置价值被系统开发' },
+    ]},
+  { title:'信息重构阶段', era:'互联网与数字经济',
+    desc:'信息传播成本趋零，旧的信息差模式被颠覆，但新的信息差（认知差、算法差）出现。弱关系的价值被社交媒体放大，但"一言不合就拉黑"也削弱了关系深度。信任危机同步加剧。',
+    mechanisms:[
+      { title:'信息差→认知差', desc:'信息不再稀缺，解读和判断的能力成为新的稀缺资源' },
+      { title:'平台即结构洞', desc:'互联网平台是最具控制力的结构洞，垄断信息流和匹配权' },
+      { title:'信任再定义', desc:'评分、信用体系试图用算法替代人际信任，但算法偏见成为新问题' },
+    ]},
+  { title:'认知竞争阶段', era:'AI与后真相时代（现在→未来）',
+    desc:'当AI可以处理所有信息、执行所有常规任务，人类的竞争优势集中在：认知差（理解底层逻辑）、社会资本（信任网络）、适应力（跨领域跃迁）。四差链条的最后一环——执行差——被AI填平，认知差成为终极壁垒。',
+    mechanisms:[
+      { title:'认知差为王', desc:'当信息和执行都不再稀缺，认知差（理解什么、判断什么）是最后的壁垒' },
+      { title:'信任最小化', desc:'深度伪造和信息泛滥使人际信任成本飙升，可验证性成为信任新基础' },
+      { title:'元规则再博弈', desc:'AI改变了暴力、信息、资源的分布，元规则面临重新定义——谁控制AI，谁掌握新的规则制定权' },
+    ]},
+];
+
+let evoPlaying = false, evoTimer = null, currentEvoStage = 0;
+let evoCtx, evoW, evoH, evoParticles = [];
+
+function initEvoCanvas() {
+  const canvas = document.getElementById('evoCanvas');
+  if (evoCtx) return;
+  evoCtx = canvas.getContext('2d');
+  evoW = canvas.clientWidth; evoH = canvas.clientHeight;
+  canvas.width = evoW; canvas.height = evoH;
+  for (let i = 0; i < 60; i++) {
+    evoParticles.push({
+      x: Math.random() * evoW, y: Math.random() * evoH,
+      vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5,
+      r: 2 + Math.random()*3, group: Math.floor(Math.random()*5)
+    });
+  }
+  renderEvoStageContent();
+  animateEvoCanvas();
+}
+
+function renderEvoStageContent() {
+  const container = document.getElementById('evoStages');
+  container.innerHTML = '';
+  evoStages.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'evo-stage' + (i === currentEvoStage ? ' active' : '');
+    div.innerHTML = `
+      <h3>${s.title}</h3>
+      <div class="era">${s.era}</div>
+      <div class="desc">${s.desc}</div>
+      <div class="mechanisms">${s.mechanisms.map(m =>
+        `<div class="mech-card"><h5>${m.title}</h5><p>${m.desc}</p></div>`
+      ).join('')}</div>`;
+    container.appendChild(div);
+  });
+}
+
+function setEvoStage(v) {
+  currentEvoStage = parseInt(v);
+  document.getElementById('evoSlider').value = v;
+  document.getElementById('evoStageLabel').textContent = `阶段 ${v}/5`;
+  renderEvoStageContent();
+}
+
+function toggleEvolution() {
+  evoPlaying = !evoPlaying;
+  const btn = document.getElementById('evoPlayBtn');
+  btn.innerHTML = evoPlaying ? '&#9646;&#9646; 暂停' : '&#9654; 播放';
+  if (evoPlaying) {
+    currentEvoStage = 0; setEvoStage(0);
+    evoTimer = setInterval(() => {
+      if (currentEvoStage < 5) { setEvoStage(currentEvoStage + 1); }
+      else { toggleEvolution(); }
+    }, 4000);
+  } else {
+    clearInterval(evoTimer);
+  }
+}
+
+function animateEvoCanvas() {
+  if (!evoCtx) return;
+  evoCtx.clearRect(0, 0, evoW, evoH);
+
+  const stage = currentEvoStage;
+  const colors = ['#f87171','#fbbf24','#60a5fa','#a78bfa','#34d399','#f472b6'];
+  const connectRange = 40 + stage * 25;
+  const clusterForce = stage >= 1 ? 0.02 + stage * 0.005 : 0;
+
+  evoParticles.forEach(p => {
+    if (stage >= 1) {
+      let cx = 0, cy = 0, count = 0;
+      evoParticles.forEach(q => { if (q.group === p.group) { cx += q.x; cy += q.y; count++; } });
+      if (count > 0) { cx /= count; cy /= count; p.vx += (cx - p.x) * clusterForce * 0.1; p.vy += (cy - p.y) * clusterForce * 0.1; }
+    }
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0 || p.x > evoW) p.vx *= -1;
+    if (p.y < 0 || p.y > evoH) p.vy *= -1;
+    p.x = Math.max(0, Math.min(evoW, p.x));
+    p.y = Math.max(0, Math.min(evoH, p.y));
+  });
+
+  for (let i = 0; i < evoParticles.length; i++) {
+    for (let j = i+1; j < evoParticles.length; j++) {
+      const a = evoParticles[i], b = evoParticles[j];
+      const dx = a.x - b.x, dy = a.y - b.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < connectRange) {
+        const alpha = (1 - dist/connectRange) * 0.3;
+        const sameGroup = a.group === b.group;
+        if (stage < 2 || sameGroup || Math.random() < 0.3) {
+          evoCtx.beginPath();
+          evoCtx.moveTo(a.x, a.y); evoCtx.lineTo(b.x, b.y);
+          evoCtx.strokeStyle = sameGroup ?
+            colors[a.group % colors.length] + Math.round(alpha*255).toString(16).padStart(2,'0') :
+            'rgba(100,116,139,' + alpha + ')';
+          evoCtx.lineWidth = sameGroup ? 1.5 : 0.5;
+          evoCtx.stroke();
+        }
+      }
+    }
+  }
+
+  evoParticles.forEach(p => {
+    evoCtx.beginPath();
+    evoCtx.arc(p.x, p.y, p.r + stage*0.3, 0, Math.PI*2);
+    evoCtx.fillStyle = colors[p.group % colors.length] + '44';
+    evoCtx.fill();
+    evoCtx.strokeStyle = colors[p.group % colors.length];
+    evoCtx.lineWidth = 1.5;
+    evoCtx.stroke();
+  });
+
+  if (evoStages[stage]) {
+    evoCtx.fillStyle = 'rgba(255,255,255,0.06)';
+    evoCtx.font = 'bold 32px sans-serif';
+    evoCtx.textAlign = 'center';
+    evoCtx.fillText(evoStages[stage].title, evoW/2, 40);
+  }
+
+  requestAnimationFrame(animateEvoCanvas);
+}
+
+// ========== Init ==========
+renderRules();
+renderScenarios();
+renderMisconceptions();
+drawGraph();
+</script>
+</body>
+</html>
