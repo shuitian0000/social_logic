@@ -10,12 +10,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Single-page application: `index.html` contains all HTML, CSS, and JavaScript. No build system, no dependencies, no server required. Open directly in a browser.
 
-## Five Interactive Sections
+## Six Interactive Sections
 
+0. **进化之路** — 5-stage evolutionary path (术→法→道) with synchronized cognitive + practical dimensions, transition barriers as misconceptions
 1. **关系图谱** — SVG-based interactive relationship graph (3-layer: macro/micro/evolution)
-2. **规则清单** — 16 iron rules in 3-phase learning path (see→understand→act), each rule has scene→core→deep layers
-3. **实践映射** — Scenario-to-action guides (job/career/social/wealth/life choices)
-4. **认知纠偏** — Misconception vs reality comparison table
+2. **规则清单** — 16 iron rules with stage badges showing evolutionary stage membership
+3. **实践映射** — Scenario-to-action guides (job/career/social/wealth/life choices/rise)
+4. **认知纠偏** — Misconception vs reality comparison table, 5 barrier misconceptions marked with stage badges
 5. **演化动画** — Canvas particle animation showing 6 stages of social evolution
 
 ## Theoretical Foundation

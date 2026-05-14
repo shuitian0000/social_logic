@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>社会底层逻辑 - 全面解析系统 v4</title>
+<title>社会底层逻辑 - 全面解析系统 v6</title>
 <style>
 :root {
   --bg: #0a0e17;
@@ -195,21 +195,127 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; }
   .graph-container { height: 500px; }
   .insight-panels { grid-template-columns: 1fr; }
 }
+
+/* Stages: Evolution Path */
+.stage-progress { margin: 0 auto 40px; max-width: 700px; }
+.progress-track { display: flex; align-items: center; justify-content: center; gap: 0; }
+.progress-node { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 16px; font-weight: 700; position: relative; transition: all 0.3s; }
+.progress-node.s1 { background: rgba(59,130,246,0.15); color: #3b82f6; border: 2px solid #3b82f6; }
+.progress-node.s2 { background: rgba(139,92,246,0.15); color: #8b5cf6; border: 2px solid #8b5cf6; }
+.progress-node.s3 { background: rgba(245,158,11,0.15); color: #f59e0b; border: 2px solid #f59e0b; }
+.progress-node.s4 { background: rgba(16,185,129,0.15); color: #10b981; border: 2px solid #10b981; }
+.progress-node.s5 { background: rgba(239,68,68,0.15); color: #ef4444; border: 2px solid #ef4444; }
+.progress-node::after { content: attr(data-sub); position: absolute; bottom: -20px; font-size: 10px;
+  color: var(--text2); white-space: nowrap; font-weight: 400; }
+.progress-bridge { width: 60px; height: 2px; background: linear-gradient(to right, var(--border), var(--border)); flex-shrink: 0; }
+
+.stages-grid { display: flex; flex-direction: column; gap: 32px; padding: 20px 0; }
+.stage-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  padding: 28px; position: relative; overflow: hidden; transition: all 0.3s; }
+.stage-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+.stage-card.s1 { border-left: 4px solid #3b82f6; }
+.stage-card.s2 { border-left: 4px solid #8b5cf6; }
+.stage-card.s3 { border-left: 4px solid #f59e0b; }
+.stage-card.s4 { border-left: 4px solid #10b981; }
+.stage-card.s5 { border-left: 4px solid #ef4444; }
+
+.stage-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.stage-level { padding: 4px 14px; border-radius: 6px; font-size: 15px; font-weight: 700; }
+.stage-level.s1 { background: rgba(59,130,246,0.15); color: #3b82f6; }
+.stage-level.s2 { background: rgba(139,92,246,0.15); color: #8b5cf6; }
+.stage-level.s3 { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.stage-level.s4 { background: rgba(16,185,129,0.15); color: #10b981; }
+.stage-level.s5 { background: rgba(239,68,68,0.15); color: #ef4444; }
+.stage-header h3 { font-size: 20px; font-weight: 700; margin: 0; }
+.stage-scale { font-size: 13px; color: var(--text2); padding: 3px 10px;
+  background: var(--surface2); border-radius: 4px; }
+
+.stage-transition { font-size: 14px; color: var(--text2); line-height: 1.8;
+  margin-bottom: 20px; padding: 12px 16px; background: rgba(255,255,255,0.02);
+  border-radius: 8px; border-left: 3px solid var(--border); font-style: italic; }
+
+.stage-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.stage-panel { background: var(--surface2); border-radius: 10px; padding: 20px; }
+.stage-panel h4 { font-size: 14px; font-weight: 700; margin-bottom: 12px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--border); }
+.stage-panel.cognitive h4 { color: #60a5fa; }
+.stage-panel.practical h4 { color: #34d399; }
+.stage-item { font-size: 13px; color: var(--text); line-height: 1.7; margin-bottom: 10px;
+  padding-left: 12px; position: relative; }
+.stage-item::before { content: ''; position: absolute; left: 0; top: 9px; width: 5px; height: 5px; border-radius: 50%; }
+.stage-panel.cognitive .stage-item::before { background: #60a5fa; }
+.stage-panel.practical .stage-item::before { background: #34d399; }
+.stage-link { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 4px;
+  font-size: 11px; cursor: pointer; transition: all 0.2s; }
+.stage-link.rule-link { background: rgba(96,165,250,0.1); color: #60a5fa; }
+.stage-link.rule-link:hover { background: rgba(96,165,250,0.25); }
+.stage-link.scene-link { background: rgba(52,211,153,0.1); color: #34d399; }
+.stage-link.scene-link:hover { background: rgba(52,211,153,0.25); }
+
+.stage-barrier { background: rgba(239,68,68,0.05); border: 1px dashed rgba(239,68,68,0.3);
+  border-radius: 10px; padding: 16px 20px; display: flex; align-items: flex-start; gap: 14px; }
+.barrier-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+.barrier-wrong { font-size: 14px; color: #fca5a5; font-weight: 600; margin-bottom: 4px; }
+.barrier-key { font-size: 13px; color: #fbbf24; line-height: 1.6; }
+
+/* Stage badge on rule cards */
+.stage-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px;
+  font-weight: 700; margin-left: 8px; vertical-align: middle; }
+.stage-badge.s1 { background: rgba(59,130,246,0.15); color: #3b82f6; }
+.stage-badge.s2 { background: rgba(139,92,246,0.15); color: #8b5cf6; }
+.stage-badge.s3 { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.stage-badge.s4 { background: rgba(16,185,129,0.15); color: #10b981; }
+.stage-badge.s5 { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+/* Misconception barrier badge */
+.miscon-barrier { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px;
+  font-weight: 700; margin-left: 6px; }
+
+@media (max-width: 768px) {
+  .stage-panels { grid-template-columns: 1fr; }
+  .progress-track { flex-wrap: wrap; gap: 8px; }
+  .progress-bridge { width: 30px; }
+  .stage-header { flex-wrap: wrap; }
+}
 </style>
 </head>
 <body>
 
 <nav class="nav">
   <div class="nav-title">社会底层逻辑</div>
-  <a class="active" onclick="showSection('graph',this)">关系图谱</a>
+  <a class="active" onclick="showSection('stages',this)">进化之路</a>
+  <a onclick="showSection('graph',this)">关系图谱</a>
   <a onclick="showSection('rules',this)">规则清单</a>
   <a onclick="showSection('scenario',this)">实践映射</a>
   <a onclick="showSection('misconception',this)">认知纠偏</a>
   <a onclick="showSection('evolution',this)">演化动画</a>
 </nav>
 
+<!-- ===== 0. 进化之路 ===== -->
+<div id="stages" class="section active">
+  <div class="hero">
+    <h1>进化之路：从术到道</h1>
+    <p>认知与实践同步进化——每一步"懂了什么"都对应"能做什么"。<br>不跨越认知障碍，就无法进入下一阶段。从小生意到大集团，从术至道。</p>
+  </div>
+  <div class="stage-progress">
+    <div class="progress-track">
+      <span class="progress-node s1" data-sub="个体生存">术</span>
+      <span class="progress-bridge"></span>
+      <span class="progress-node s2" data-sub="小生意积累">术→法</span>
+      <span class="progress-bridge"></span>
+      <span class="progress-node s3" data-sub="区域突破">法</span>
+      <span class="progress-bridge"></span>
+      <span class="progress-node s4" data-sub="系统驾驭">法→道</span>
+      <span class="progress-bridge"></span>
+      <span class="progress-node s5" data-sub="道的境界">道</span>
+    </div>
+  </div>
+  <div class="stages-grid" id="stagesGrid"></div>
+</div>
+
 <!-- ===== 1. 可视化关系图谱 ===== -->
-<div id="graph" class="section active">
+<div id="graph" class="section">
   <div class="hero">
     <h1>社会运行底层逻辑图谱</h1>
     <p>三层架构：宏观结构（权力·分配·利益）→ 微观博弈（定位·红线·跃升）→ 系统演化（信任·交换·认知）<br>整合布迪厄、刘润、天涯神贴、知乎洞察 — 为年轻人而写</p>
@@ -337,6 +443,7 @@ function showSection(id, el) {
   document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   el.classList.add('active');
+  if (id === 'stages') renderStages();
   if (id === 'graph') drawGraph();
   if (id === 'evolution') { initEvoCanvas(); setEvoStage(currentEvoStage); }
 }
@@ -548,6 +655,190 @@ function drawGraph() {
   });
 }
 
+
+// ========== 0. Stages: Evolution Path (v6) ==========
+const stages = [
+  { num:1, level:'术', levelSub:'知其然', title:'个体生存', scale:'个体谋生者', cssClass:'s1',
+    transition:'从盲目勤奋到找到信息缝隙',
+    transitionDesc:'你曾经以为拼命加班是出路，直到你发现那个准时下班却总能拿到内部消息的同事升得更快。你不再问「我还能多努力」，而是开始问「哪里有别人还没看到的机会？」',
+    rules:[
+      { num:1, label:'信息差是一切利润的源头' },
+      { num:3, label:'信任是最高价值的硬通货' },
+      { num:4, label:'幸存者偏差：看到的成功≠普遍规律' },
+    ],
+    practices:[
+      { text:'发现并利用小的信息缝隙——找工作先找信息枢纽', scenario:'job' },
+      { text:'用一致性建立初始信任——一次失约需七次守信弥补', scenario:null },
+      { text:'停止「更加努力」，开始「找到位置」', scenario:null },
+    ],
+    barrier: { wrong:'努力万能论：只要努力就能成功', key:'放弃这个信念，才能看见信息差的价值——你从Stage 1毕业，不是因为更努力，而是因为不再盲目努力', misconIndex:0 },
+    color:'#3b82f6' },
+  { num:2, level:'术→法', levelSub:'知其然，开始知其所以然', title:'小生意积累', scale:'小生意人', cssClass:'s2',
+    transition:'从碎片积累到系统性资本转换',
+    transitionDesc:'你曾经一笔一笔地赚、一个一个地攒，直到你发现会做饭的同学成了部门最受欢迎的人——他不是在做饭，是在把文化资本转化为社会资本。你不再问「我还能攒多少」，而是开始问「我攒的这些东西能转化成什么？」',
+    rules:[
+      { num:2, label:'强关系决定你能走多远' },
+      { num:5, label:'惯习是无形的阶层壁垒' },
+      { num:7, label:'四种资本可以相互转换' },
+      { num:16, label:'投资性消费：从「性价比」到「心价比」' },
+    ],
+    practices:[
+      { text:'构建3-5个深度信任的强关系——不是微信好友数，是凌晨2点能打电话的人', scenario:'social' },
+      { text:'启动资本转化循环：技能(文化)→人脉(社会)→收入(经济)→地位(象征)', scenario:'money' },
+      { text:'花钱为「成为」而非「拥有」——投资性消费：学习、健康、经历', scenario:'money' },
+    ],
+    barrier: { wrong:'自由幻觉：我的选择都是自由的', key:'看到你的「自然选择」是阶层编程，才能突破惯习——你从Stage 2毕业的那一刻，就是你不再「自然而然」做出阶层条件反射式的选择', misconIndex:9 },
+    color:'#8b5cf6' },
+  { num:3, level:'法', levelSub:'知其所以然', title:'区域突破', scale:'区域操盘手', cssClass:'s3',
+    transition:'从遵守表面规则到读懂不成文规则',
+    transitionDesc:'你曾经认真研究绩效考核标准，努力做到每一项KPI，直到你发现升职的是那个和领导关系最密切的同事。你不再问「我哪里做得不够好」，而是开始问「谁在制定这些标准？标准制定者自己遵守吗？」',
+    rules:[
+      { num:6, label:'定位决定命运，而非努力' },
+      { num:8, label:'利益分析法：利益才是底层逻辑' },
+      { num:9, label:'社会分配三层逻辑' },
+      { num:10, label:'规范是固化不平等的合法化工具' },
+      { num:11, label:'认知差五维度：最隐蔽的阶层壁垒' },
+    ],
+    practices:[
+      { text:'站到结构洞位置——连接不同部门、行业内外、公司内外', scenario:'career' },
+      { text:'读懂两套规则系统——正式规则告诉你"应该怎么做"，不成文规则告诉你"实际怎么做"', scenario:'career' },
+      { text:'从劳动型收入转向资本型收入——不再只出卖时间，让资产为你工作', scenario:'money' },
+      { text:'识别并质疑束缚你的规范："这是理所当然的吗？这是谁定义的正常？"', scenario:'choice' },
+    ],
+    barrier: { wrong:'规则迷信：规则都是公平的，按规则来就行', key:'放弃对正式规则的信仰，才能读懂不成文规则——你从Stage 3毕业的那一刻，就是你不再问「这是否合规」，而是开始问「谁的利益推动了这项规定」', misconIndex:1 },
+    color:'#f59e0b' },
+  { num:4, level:'法→道', levelSub:'知其所以然，开始知其必然', title:'系统驾驭', scale:'系统驾驭者', cssClass:'s4',
+    transition:'从在系统内博弈到设计系统运行空间',
+    transitionDesc:'你曾经精心计算每一次博弈的得失，避开每一条红线，直到你发现真正的高手不是在规则内赢得最多的那个人，而是让规则朝着对自己有利方向演进的那个人。你不再问「我怎样才能赢」，而是开始问「我怎样才能让赢成为系统的默认结果？」',
+    rules:[
+      { num:12, label:'资源依赖决定你的自由度' },
+      { num:13, label:'认知障碍是底层最大的枷锁' },
+      { num:14, label:'混社会三条红线' },
+      { num:15, label:'飞轮效应与长期主义' },
+    ],
+    practices:[
+      { text:'构建多种收入来源——三种收入来源比一种高收入更安全', scenario:'rise' },
+      { text:'刻意练习突破认知障碍——社交能力像肌肉：注视1-2秒再微笑、自信肢体语言、开放式提问', scenario:'rise' },
+      { text:'在三条红线内找操作空间——不碰上层利益、中层体面、底层生计', scenario:'social' },
+      { text:'建立飞轮动力——每天做重要不紧急的事，而非追逐紧急事务', scenario:'choice' },
+    ],
+    barrier: { wrong:'个人英雄主义：靠个人能力就能搞定一切', key:'放弃「靠个人能力搞定一切」才能理解系统网络——你从Stage 4毕业的那一刻，就是你不再问「我能做什么」，而是开始问「我能让整个系统做什么」', misconIndex:4 },
+    color:'#10b981' },
+  { num:5, level:'道', levelSub:'知其必然', title:'道的境界', scale:'生态构建者', cssClass:'s5',
+    transition:'从读懂系统到构建新系统',
+    transitionDesc:'你曾经看透了这个系统的每一条底层逻辑，直到你发现最大的自由不是在系统内找到最优位置，而是创造一个新系统让更多人找到他们的位置。你不再问「我怎样才能在现有系统里走得更远」，而是开始问「我怎样才能让更多人走得更远？」',
+    rules:[
+      { num:0, label:'全部16条铁律已内化——从遵循规则到理解规则为何存在，并创造新规则' },
+    ],
+    practices:[
+      { text:'创建组织/平台/生态——为所有参与者创造价值，而非仅仅为自己积累', scenario:null },
+      { text:'设计激励相容机制——利益分析法应用于规模层面：让系统参与者的利益与系统目标一致', scenario:null },
+      { text:'构建制度信任——创造规模化运作的信任系统（平台、社区、制度），而非仅依赖人际信任', scenario:null },
+      { text:'传播知识，减少认知差——主动降低你所在生态的认知门槛，帮助更多人突破', scenario:null },
+    ],
+    barrier: { wrong:'认知万能论：看透了底层逻辑就能成功', key:'即使在道的层面，理解永远不够——执行、资源、人际关系依然不可或缺。道不是终点，而是你意识到游戏从未结束，只是你现在是设计者而非仅仅玩家', misconIndex:10 },
+    color:'#ef4444' },
+];
+
+// Map rule num -> stage num for badge lookup
+const ruleStageMap = {};
+stages.forEach(s => { s.rules.forEach(r => { if (r.num > 0) ruleStageMap[r.num] = s.num; }); });
+
+// Map misconIndex -> stage num for barrier badge
+const misconStageMap = {};
+stages.forEach(s => { misconStageMap[s.barrier.misconIndex] = s.num; });
+
+// Map scenario id -> stage nums
+const scenarioStageMap = { job:[1], social:[2,4], money:[2,3], career:[3], choice:[3,4], rise:[4] };
+
+function renderStages() {
+  const grid = document.getElementById('stagesGrid');
+  stages.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'stage-card ' + s.cssClass;
+
+    // Header
+    let html = '<div class="stage-header">' +
+      '<span class="stage-level ' + s.cssClass + '">' + s.level + '</span>' +
+      '<h3>Stage ' + s.num + '：' + s.title + '</h3>' +
+      '<span class="stage-scale">' + s.scale + '</span>' +
+      '</div>';
+
+    // Transition
+    html += '<div class="stage-transition">' + s.transitionDesc + '</div>';
+
+    // Panels: cognitive + practical
+    html += '<div class="stage-panels">';
+
+    // Cognitive panel
+    html += '<div class="stage-panel cognitive"><h4>认知 · 你该懂什么</h4>';
+    s.rules.forEach(r => {
+      if (r.num > 0) {
+        html += '<div class="stage-item">' + r.label +
+          ' <span class="stage-link rule-link" onclick="jumpToRule(' + r.num + ')">铁律' + r.num + ' →</span></div>';
+      } else {
+        html += '<div class="stage-item">' + r.label + '</div>';
+      }
+    });
+    html += '</div>';
+
+    // Practical panel
+    html += '<div class="stage-panel practical"><h4>实践 · 你能做什么</h4>';
+    s.practices.forEach(p => {
+      if (p.scenario) {
+        const scLabel = scenarios.find(sc => sc.id === p.scenario);
+        const label = scLabel ? scLabel.label : p.scenario;
+        html += '<div class="stage-item">' + p.text +
+          ` <span class="stage-link scene-link" onclick="jumpToScenario('${p.scenario}')">${label} →</span></div>`;
+      } else {
+        html += '<div class="stage-item">' + p.text + '</div>';
+      }
+    });
+    html += '</div></div>';
+
+    // Barrier
+    html += '<div class="stage-barrier">' +
+      '<div class="barrier-icon">&#128274;</div>' +
+      '<div><div class="barrier-wrong">' + s.barrier.wrong + '</div>' +
+      '<div class="barrier-key">' + s.barrier.key + '</div></div></div>';
+
+    card.innerHTML = html;
+    grid.appendChild(card);
+  });
+}
+
+function jumpToRule(num) {
+  showSection('rules', document.querySelectorAll('.nav a')[2]);
+  setTimeout(() => {
+    const cards = document.querySelectorAll('.rule-card');
+    for (const card of cards) {
+      const h3 = card.querySelector('h3');
+      if (h3 && h3.textContent === '铁律' + num) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.add('expanded');
+        setTimeout(() => card.style.boxShadow = '0 0 20px rgba(96,165,250,0.3)', 300);
+        setTimeout(() => card.style.boxShadow = '', 2000);
+        break;
+      }
+    }
+  }, 300);
+}
+
+function jumpToScenario(id) {
+  showSection('scenario', document.querySelectorAll('.nav a')[3]);
+  setTimeout(() => {
+    const tabs = document.querySelectorAll('.scenario-tab');
+    tabs.forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.scenario-content').forEach(c => c.classList.remove('active'));
+    tabs.forEach((t, i) => {
+      if (scenarios[i].id === id) {
+        t.classList.add('active');
+        document.getElementById('sc_' + id).classList.add('active');
+      }
+    });
+  }, 300);
+}
+
 // ========== 2. Rules (v4: learning path L1→L2→L3) ==========
 const rulePhases = [
   { level:'l1', title:'L1 看见', subtitle:'你每天碰到，但可能没想透的现象',
@@ -619,7 +910,7 @@ const rulePhases = [
         deep:'飞轮效应：初始推动最费力，但一旦转动起来，每圈都比上一圈更快。重要不紧急的事最容易被挤掉，但恰恰是它们决定长期天花板。时间管理四象限：第一象限（重要紧急）让人不堪重负；第二象限（重要不紧急）——学习提升、个人成长——最该投入但最容易被挤掉。大部分人深陷第一和第三象限，难以脱身。刘强东创业10年黑暗期："你能在十年的黑暗时光里坚信方向是正确的，坚持得越久，就能取得更大的成功。"但注意：坚持的前提是方向正确——在错误方向上的坚持只是加速失败。',
         source:'吉姆·柯林斯《从优秀到卓越》；新华网' },
       { num:16, scene:'消费：同样花200块，有人买了机会有人只买了东西？',
-        core:'投资性消费：从"性价比"到"心价比"',
+        core:'投资性消费：从「性价比」到「心价比」',
         deep:'花钱之前问：这项支出是否滋养了身心、拓展了能力、提升了品质？如果是，就是投资性消费；如果只是填补空虚或迎合虚荣，就是消费主义陷阱。投资性消费实例：为心理咨询付费→为情绪管理能力埋单；为健身消费→为身体机能投资；为学习新技能花钱→为人生可能性布局。2024年数据：46.28%新青年消费需求是"取悦自我"，64%受访者倾向精神消费。Z世代反向消费：95.3%年轻人越来越"精明"——省钱而不降品位、省钱而不失时尚。消费判断标准：价值排序从"为了拥有"转向"为了成为"。',
         source:'中国经济网；艾媒咨询2024' },
     ]},
@@ -640,7 +931,7 @@ function renderRules() {
       card.onclick = () => card.classList.toggle('expanded');
       card.innerHTML =
         '<div class="rule-num">' + String(r.num).padStart(2,'0') + '</div>' +
-        '<h3>铁律' + r.num + '</h3>' +
+        '<h3>铁律' + r.num + (ruleStageMap[r.num] ? ' <span class="stage-badge s' + ruleStageMap[r.num] + '">Stage ' + ruleStageMap[r.num] + '</span>' : '') + '</h3>' +
         '<div class="rule-scene">' + r.scene + '</div>' +
         '<div class="rule-core">' + r.core + '</div>' +
         '<div class="rule-toggle">点击展开深层逻辑 ▾</div>' +
@@ -674,7 +965,7 @@ const scenarios = [
     { title:'识别信息差机会——信息差→认知差→利润', body:'财富的本质是信息差的变现。四差链条：信息差→认知差→资源差→执行差。社会分配三层逻辑：底层按劳、中层按资、上层按权——你要从按劳向按资跃迁。', tip:'赚钱五层逻辑：体力→脑力→买卖→资本→权力——你在哪一层？' },
     { title:'文化资本变现——找到稀缺性定位', body:'专业技能是最可控的文化资本。将技能转化为收入的关键不是"更努力"，而是找到技能的稀缺性定位。稀缺性=需求/供给。', tip:'选一个需求增长快但供给少的领域深耕' },
     { title:'从线性收入到结构收入', body:'打工是线性收入（时间×单价），财富积累需要结构收入（一次投入，持续回报）。第一步：增加线性收入；第二步：将线性收入转化为能产生被动收入的资产。', tip:'三种收入来源比一种高收入更安全——即使每种都只有中等水平' },
-    { title:'投资性消费——从"性价比"到"心价比"', body:'花钱之前问：这项支出是否滋养了身心、拓展了能力、提升了品质？为心理咨询付费→为情绪管理埋单；为健身消费→为身体投资；为学习花钱→为可能性布局。价值排序从"为了拥有"转向"为了成为"。', tip:'2024年数据：46.28%新青年消费需求是"取悦自我"——悦己消费本质是人力资本投资' },
+    { title:'投资性消费——从「性价比」到「心价比」', body:'花钱之前问：这项支出是否滋养了身心、拓展了能力、提升了品质？为心理咨询付费→为情绪管理埋单；为健身消费→为身体投资；为学习花钱→为可能性布局。价值排序从"为了拥有"转向"为了成为"。', tip:'2024年数据：46.28%新青年消费需求是"取悦自我"——悦己消费本质是人力资本投资' },
   ]},
   { id:'choice', label:'人生选择', icon:'🧭', steps:[
     { title:'识别惯习的自动运行——质疑"理所当然"', body:'当你觉得"我当然应该这样做"时，停下来——这可能是惯习在自动运行。追问：这是我的选择，还是我阶层的默认设置？', tip:'惯习的特征是"觉得理所当然"——越是理所当然，越可能是被塑造的' },
@@ -751,9 +1042,10 @@ function renderMisconceptions() {
   grid.innerHTML = `
     <div class="miscon-header wrong">&#10005; 常见误区</div>
     <div class="miscon-header right">&#10003; 底层逻辑</div>`;
-  misconceptions.forEach(m => {
+  misconceptions.forEach((m, i) => {
+    const barrierInfo = misconStageMap[i] ? ' <span class="stage-badge s' + misconStageMap[i] + '">Stage ' + misconStageMap[i] + ' 过渡障碍</span>' : '';
     grid.innerHTML += `
-      <div class="miscon-cell wrong"><span class="tag x">&#10005;</span>${m.wrong}<br><small style="color:#94a3b8">【${m.tag}】</small><span class="example">${m.example}</span></div>
+      <div class="miscon-cell wrong"><span class="tag x">&#10005;</span>${m.wrong}${barrierInfo}<br><small style="color:#94a3b8">【${m.tag}】</small><span class="example">${m.example}</span></div>
       <div class="miscon-cell right"><span class="tag check">&#10003;</span>${m.right}</div>`;
   });
 }
@@ -927,6 +1219,7 @@ function animateEvoCanvas() {
 }
 
 // ========== Init ==========
+renderStages();
 renderRules();
 renderScenarios();
 renderMisconceptions();
